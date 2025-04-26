@@ -46,7 +46,7 @@ class Dataset_Epic(Dataset):
                        'EMG_Amplitude_zygo',
                        'PPG_Rate',
                        'Skt',
-                       'Video',
+                    #    'Video',
                       ]
         # self.features=['ECG_Rate', 
         #                'ECG_Rate_entropy_401', 'ECG_Rate_max_level_shift_401', 'ECG_Rate_max_var_shift_401', 
@@ -464,7 +464,7 @@ def objective_lstm(params, train, test,num_Features):
                 print(params)
                 print(best_loss)
                 best_model = model
-                torch.save(best_model,"best_model_dropout_l2_nooverlap_80_ID_tanming_cross_val_no_dyn.pt")
+                torch.save(best_model,"best_model_dropout_l2_nooverlap_80_ID_tanming_cross_val_no_dyn_no_video_id.pt")
             if avg_loss < curr_trail_best_loss:
                 curr_trail_best_loss = avg_loss
             print(f'Epoch [{epoch + 1}/{epochs}], Test_Loss: {avg_loss:.4f}, Train_Loss:{train_loss:.4f}, Val_Loss:{val_loss:.4f}, R2:{r2:.4f}')
