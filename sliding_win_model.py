@@ -160,7 +160,7 @@ class Dataset_Epic(Dataset):
         #                  'Video'
         #                  ]
 
-        self.features = [ #'Video', 
+        self.features = [ 'Video', 
                          'EDA_Tonic', 
                          'EDA_Tonic_max_level_shift_21','EDA_Tonic_spike_21','EDA_Tonic_std1st_der_21', 
                         #  'EDA_Tonic_mean_21', 'EDA_Tonic_mean_lag60', 'EDA_Tonic_mean_lag120', 
@@ -295,6 +295,7 @@ print(device)
 torch.cuda.empty_cache()
 train = Dataset_Epic(train_path="../ID_80_2hz_train_dynamic_features_lagstep60",flag="train",num_T=3)
 test = Dataset_Epic(test_path="../ID_20_2hz_test_dynamic_features_lagstep60",flag="test",num_T=3)
+torch.backends.cudnn.enabled = False
 
 
 
@@ -327,6 +328,7 @@ class LSTMNet(nn.Module):
         # Permute x to (batch_size, num_T, numFeatures) for LSTM
         
         #x = x.permute(0, 2, 1)
+        self.lstm.flatten_parameters()
         batch_size, num_T, num_features = x.shape
         
 
@@ -464,7 +466,7 @@ def objective_lstm(params, train, test,num_Features):
                 print(params)
                 print(best_loss)
                 best_model = model
-                torch.save(best_model,"best_model_dropout_l2_nooverlap_80_ID_tanming_cross_val_selected_dyn_no_video_id.pt")
+                torch.save(best_model,"best_model_dropout_l2_nooverlap_80_ID_tanming_cross_val_selected_dyn_with_videoid_no_CuDNN.pt")
             if avg_loss < curr_trail_best_loss:
                 curr_trail_best_loss = avg_loss
             print(f'Epoch [{epoch + 1}/{epochs}], Test_Loss: {avg_loss:.4f}, Train_Loss:{train_loss:.4f}, Val_Loss:{val_loss:.4f}, R2:{r2:.4f}')
@@ -480,6 +482,8 @@ def objective_lstm(params, train, test,num_Features):
     
     return {'loss': iter_avg_loss, 'status': STATUS_OK}
 
+
+
 # Define the hyperparameter search space for LSTM regression
 space_lstm = {
     'hidden_size': scope.int(hp.quniform('hidden_size', 30, 180, 2)),
@@ -490,6 +494,15 @@ space_lstm = {
     'num_T': scope.int(hp.quniform('num_T',1,5,1))
 }
 
+# space_lstm = {
+#     'hidden_size': 176,
+#     'num_layers': 11,
+#     'lr': hp.loguniform('lr', np.log(1e-4), np.log(1e-1)),
+#     'dropout': 0.1,
+#     'l2': scope.float(hp.quniform('l2', 0.0, 0.5, 0.05)),
+#     'num_T': 2
+# }
+
 best_loss = float('inf')
 overall_bestr2 = 0.0
 best_model = None
@@ -499,7 +512,7 @@ best_model = None
 # Run the optimization for LSTM regression
 trials_lstm = Trials()
 best_lstm = fmin(fn=lambda params: objective_lstm(params, train, test, len(train.features)), 
-                 space=space_lstm, algo=tpe.suggest, max_evals=50, trials=trials_lstm)
+                 space=space_lstm, algo=tpe.suggest, max_evals=6, trials=trials_lstm)
 
 print(f'overall_bestr2:{overall_bestr2:.4f}')
 
