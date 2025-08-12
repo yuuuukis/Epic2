@@ -68,7 +68,8 @@ class Dataset_Epic(Dataset):
                          'EMG_Amplitude_coru', 
                          'EMG_Amplitude_trap',
         ]
-        self.labels=["valence","arousal"]
+        #self.labels=["valence","arousal"]
+        self.labels=["valence"]
         
         self.train_df = pd.DataFrame()
         self.num_T = num_T
@@ -136,7 +137,8 @@ class LSTMNet(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True,dropout=dropout_rate)
         #self.fc = nn.Linear(hidden_size, 2)  # Output a single value for each time step
         self.fc = nn.Sequential(
-            nn.Linear(hidden_size*num_T, 2),
+            # nn.Linear(hidden_size*num_T, 2),
+            nn.Linear(hidden_size*num_T, 1),
         )
 
     def forward(self, x):
@@ -159,15 +161,16 @@ class LSTMNet(nn.Module):
         out = self.fc(out)  # out has shape (batch_size, num_T, 1)
         
         # Remove the last dimension, resulting in (batch_size, num_T)
-        out = out.squeeze(-1)
+        # out = out.squeeze(-1)
+        out = out.squeeze().unsqueeze(1)
 
         return out
 
 if __name__ == '__main__':
     torch.cuda.empty_cache()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    test = Dataset_Epic(test_path="../ID_20_2hz_test_dynamic_features_lagstep60",flag="test",num_T=1)
-    train = Dataset_Epic(train_path="../ID_80_2hz_train_dynamic_features_lagstep60",flag="train",num_T=1)
+    test = Dataset_Epic(test_path="./simulation/test",flag="test",num_T=3)
+    train = Dataset_Epic(train_path="./simulation/train",flag="train",num_T=3)
     train_dataloader = DataLoader(
         train,
         batch_size=16,
@@ -189,7 +192,7 @@ if __name__ == '__main__':
 
 
 
-    best_model = torch.load('./best_model_dropout_l2_nooverlap_80_ID_tanming_cross_val_selected_dyn_with_videoid_no_CuDNN.pt',weights_only=False)
+    best_model = torch.load('./model/2025_08_12_09_22_55_sim_vedio_id.pt',weights_only=False)
     print(best_model)
 
     x_train = []

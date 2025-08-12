@@ -218,7 +218,7 @@ class Dataset_Epic(Dataset):
                         #  'Skt_entropy_21', 'Skt_max_level_shift_21', 'Skt_max_var_shift_21', 'Skt_max_kl_shift_21', 'Skt_hurst_21', 'Skt_spike_21', 'Skt_arch_acf_21', 'Skt_garch_acf_21', 
                         #  'Skt_ARCH.LM_21', 'Skt_std1st_der_21', 'Skt_mean_21', 'Skt_mean_lag60', 'Skt_mean_lag120', 'Skt_mean_lag180', 'Skt_mean_lag240', 'Skt_mean_lag300'
                          ]
-        self.labels=["valence","arousal"]
+        self.labels=["valence"]
         # self.labels=["valence"]
         
         self.train_df = pd.DataFrame()
@@ -296,8 +296,8 @@ class Dataset_Epic(Dataset):
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 torch.cuda.empty_cache()
-train = Dataset_Epic(train_path="../ID_80_2hz_train_dynamic_features_lagstep60",flag="train",num_T=2)
-test = Dataset_Epic(test_path="../ID_20_2hz_test_dynamic_features_lagstep60",flag="test",num_T=2)
+train = Dataset_Epic(train_path="./simulation/train",flag="train",num_T=2)
+test = Dataset_Epic(test_path="./simulation/test",flag="test",num_T=2)
 # train = Dataset_Epic(train_path="./simulation/train",flag="train",num_T=3)
 # test = Dataset_Epic(test_path="./simulation/test",flag="test",num_T=3)
 torch.backends.cudnn.enabled = False
@@ -326,8 +326,8 @@ class LSTMNet(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True,dropout=dropout_rate)
         #self.fc = nn.Linear(hidden_size, 2)  # Output a single value for each time step
         self.fc = nn.Sequential(
-            nn.Linear(hidden_size*num_T, 2),
-            # nn.Linear(hidden_size*num_T, 1),
+            # nn.Linear(hidden_size*num_T, 2),
+            nn.Linear(hidden_size*num_T, 1),
         )
 
     def forward(self, x):
@@ -351,8 +351,8 @@ class LSTMNet(nn.Module):
         out = self.fc(out)  # out has shape (batch_size, num_T, 1)
         
         # Remove the last dimension, resulting in (batch_size, num_T)
-        out = out.squeeze(-1)
-        # out = out.squeeze().unsqueeze(1)
+        # out = out.squeeze(-1)
+        out = out.squeeze().unsqueeze(1)
 
         return out
 
@@ -474,7 +474,7 @@ def objective_lstm(params, train, test,num_Features):
                 print(params)
                 print(best_loss)
                 best_model = model
-                torch.save(best_model,f"./model/{datetime_string}_dyn_feats_vedio_id.pt")
+                torch.save(best_model,f"./model/{datetime_string}_sim_vedio_id.pt")
             if avg_loss < curr_trail_best_loss:
                 curr_trail_best_loss = avg_loss
             print(f'Epoch [{epoch + 1}/{epochs}], Test_Loss: {avg_loss:.4f}, Train_Loss:{train_loss:.4f}, Val_Loss:{val_loss:.4f}, R2:{r2:.4f}')
@@ -499,7 +499,7 @@ space_lstm = {
     'lr': hp.loguniform('lr', np.log(1e-4), np.log(1e-1)),
     'dropout': scope.float(hp.quniform('dropout', 0.0, 0.5, 0.05)),
     'l2': scope.float(hp.quniform('l2', 0.0, 0.5, 0.05)),
-    'num_T': scope.int(hp.quniform('num_T',1,5,1))
+    'num_T': scope.int(hp.quniform('num_T',1,6,1))
 }
 
 # space_lstm = {
